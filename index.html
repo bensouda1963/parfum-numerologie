@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<!-- PWA Meta Tags -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#7d5a3a">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- iOS Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ParfumNumero">
+<link rel="apple-touch-icon" href="/icons/icon-152x152.png">
+<link rel="stylesheet" href="/css/styles.css">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="/icons/icon-32x32.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parfum Numérologique 3x3</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f5f2;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #7d5a3a;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #d4b483;
+            padding-bottom: 10px;
+        }
+        .form-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #5a4a3a;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d4b483;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #9c7c5c;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #7d5a3a;
+        }
+        #result {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .ingredient-list {
+            margin-top: 15px;
+            padding-left: 20px;
+        }
+        .ingredient-list li {
+            margin-bottom: 8px;
+        }
+        .section-title {
+            color: #7d5a3a;
+            margin-top: 25px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Créateur de Parfum Numérologique</h1>
+    
+    <div class="form-container">
+        <div class="form-group">
+            <label for="nom">Nom complet :</label>
+            <input type="text" id="nom" placeholder="Ex: Jean Martin" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="date">Date de naissance (JJ/MM/AAAA) :</label>
+            <input type="text" id="date" placeholder="Ex: 15/03/1985" required>
+        </div>
+        
+        <button onclick="genererPDF()">Créer mon parfum</button>
+    </div>
+    
+    <div id="result"></div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        // Calcul du Chemin de Vie
+        function calculerCheminDeVie(date) {
+            const chiffres = date.replace(/\D/g, '');
+            let somme = 0;
+            for (const c of chiffres) somme += parseInt(c);
+            
+            while (somme > 9 && ![11, 22, 33].includes(somme)) {
+                somme = somme.toString().split('').reduce((a, b) => a + parseInt(b), 0);
+            }
+            return somme;
+        }
+
+        // Calcul du Nombre d'Âme (voyelles)
+        function calculerNombreAme(nom) {
+            const voyelles = { 'a':1, 'e':5, 'i':9, 'o':6, 'u':3, 'y':7 };
+            let somme = 0;
+            for (const c of nom.toLowerCase()) {
+                if (voyelles[c]) somme += voyelles[c];
+            }
+            return somme > 9 && ![11, 22, 33].includes(somme) ? somme % 9 || 9 : somme;
+        }
+
+        // Calcul du Nombre d'Expression
+        function calculerNombreExpression(nom) {
+            const valeurs = { 
+                'a':1, 'b':2, 'c':3, 'd':4, 'e':5, 'f':6, 'g':7, 'h':8, 'i':9,
+                'j':1, 'k':2, 'l':3, 'm':4, 'n':5, 'o':6, 'p':7, 'q':8, 'r':9,
+                's':1, 't':2, 'u':3, 'v':4, 'w':5, 'x':6, 'y':7, 'z':8 
+            };
+            let somme = 0;
+            for (const c of nom.toLowerCase()) {
+                if (valeurs[c]) somme += valeurs[c];
+            }
+            return somme > 9 && ![11, 22, 33].includes(somme) ? somme % 9 || 9 : somme;
+        }
+
+        // Base de données des ingrédients (3 par nombre)
+        function getIngredientsParfum(nombre) {
+            const ingredientsDB = {
+                1: {
+                    base: ["Cèdre de l'Atlas", "Vétiver", "Bois de Santal"],
+                    coeur: ["Bergamote", "Pamplemousse rose", "Citron vert"],
+                    tete: ["Gingembre", "Poivre noir", "Cardamome"]
+                },
+                2: {
+                    base: ["Vanille de Madagascar", "Ambre gris", "Benjoin"],
+                    coeur: ["Rose de Mai", "Jasmin Sambac", "Fleur d'Oranger"],
+                    tete: ["Poire Williams", "Pêche de vigne", "Litchi"]
+                },
+                3: {
+                    base: ["Miel d'acacia", "Cire d'abeille", "Caramel"],
+                    coeur: ["Pêche blanche", "Abricot", "Fraise des bois"],
+                    tete: ["Verveine citronnée", "Mélisse", "Basilic sacré"]
+                },
+                4: {
+                    base: ["Patchouli indonésien", "Mousse de chêne", "Ciste labdanum"],
+                    coeur: ["Champignon terreux", "Tubercule", "Feuille humide"],
+                    tete: ["Ambre gris", "Sel marin", "Pierre chaude"]
+                },
+                5: {
+                    base: ["Cuir de Russie", "Tabac blond", "Peau blanche"],
+                    coeur: ["Cardamome verte", "Cannelle de Ceylan", "Cumin noir"],
+                    tete: ["Yuzu japonais", "Combava", "Kumquat"]
+                },
+                6: {
+                    base: ["Bois de Cashmere", "Gaïac", "Cèdre bleu"],
+                    coeur: ["Jasmin d'Egypte", "Tiaré", "Gardénia"],
+                    tete: ["Caramel salé", "Noix de coco", "Fève tonka"]
+                },
+                7: {
+                    base: ["Encens oliban", "Myrrhe", "Opoponax"],
+                    coeur: ["Algue marine", "Corail", "Eau de mer"],
+                    tete: ["Menthe poivrée", "Eucalyptus", "Romarin"]
+                },
+                8: {
+                    base: ["Oud royal", "Bois d'agar", "Bois de gaiac"],
+                    coeur: ["Bois d'ébène", "Ébène noire", "Charbon végétal"],
+                    tete: ["Tabac noir", "Cacao", "Café torréfié"]
+                },
+                9: {
+                    base: ["Ambre jaune", "Baume du Pérou", "Oliban"],
+                    coeur: ["Fleur de Tiare", "Frangipanier", "Ylang-Ylang"],
+                    tete: ["Zeste d'orange", "Mandarine", "Clémentine"]
+                },
+                11: {
+                    base: ["Orchidée noire", "Iris pallida", "Magnolia"],
+                    coeur: ["Narcisse", "Jonquille", "Jacinthe"],
+                    tete: ["Citron vert", "Citron caviar", "Lime"]
+                },
+                22: {
+                    base: ["Encens sacré", "Bois de oud", "Musc blanc"],
+                    coeur: ["Rose blanche", "Lys", "Camélia"],
+                    tete: ["Figue laquée", "Datte", "Raisin doré"]
+                },
+                33: {
+                    base: ["Iris", "Orris", "Racine de violette"],
+                    coeur: ["Lotus bleu", "Nénuphar", "Fleur de lotus"],
+                    tete: ["Thé vert matcha", "Thé blanc", "Thé oolong"]
+                }
+            };
+            return ingredientsDB[nombre] || ingredientsDB[1];
+        }
+
+        // Génère le PDF et affiche le résultat
+        function genererPDF() {
+            const nom = document.getElementById("nom").value.trim();
+            const date = document.getElementById("date").value.trim();
+            
+            if (!nom || !date) {
+                alert("Veuillez remplir tous les champs !");
+                return;
+            }
+
+            // Calculs numérologiques
+            const cheminVie = calculerCheminDeVie(date);
+            const nombreAme = calculerNombreAme(nom);
+            const nombreExpression = calculerNombreExpression(nom);
+
+            // Récupère les ingrédients
+            const ingredientsCV = getIngredientsParfum(cheminVie);
+            const ingredientsAme = getIngredientsParfum(nombreAme);
+            const ingredientsExpr = getIngredientsParfum(nombreExpression);
+
+            // Affiche le résultat dans la page
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = `
+                <h2>Votre profil olfactif</h2>
+                <p><strong>Nom :</strong> ${nom}</p>
+                <p><strong>Date de naissance :</strong> ${date}</p>
+                
+                <div class="section-title">Base (Chemin de Vie ${cheminVie}) : Fondation du parfum</div>
+                <ul class="ingredient-list">
+                    ${ingredientsCV.base.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+                
+                <div class="section-title">Cœur (Âme ${nombreAme}) : Personnalité profonde</div>
+                <ul class="ingredient-list">
+                    ${ingredientsAme.coeur.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+                
+                <div class="section-title">Tête (Expression ${nombreExpression}) : Première impression</div>
+                <ul class="ingredient-list">
+                    ${ingredientsExpr.tete.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+            `;
+
+            // Crée le PDF
+            const doc = new jsPDF();
+            
+            // En-tête
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(18);
+            doc.setTextColor(125, 90, 58);
+            doc.text("VOTRE PARFUM NUMÉROLOGIQUE", 105, 20, null, null, "center");
+            
+            // Informations personnelles
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Nom : ${nom}`, 20, 40);
+            doc.text(`Date de naissance : ${date}`, 20, 50);
+            
+            // Base
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(125, 90, 58);
+            doc.text(`BASE (Chemin de Vie ${cheminVie}) :`, 20, 70);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            ingredientsCV.base.forEach((ing, i) => {
+                doc.text(`- ${ing}`, 25, 80 + (i * 7));
+            });
+            
+            // Cœur
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(125, 90, 58);
+            doc.text(`CŒUR (Âme ${nombreAme}) :`, 20, 110);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            ingredientsAme.coeur.forEach((ing, i) => {
+                doc.text(`- ${ing}`, 25, 120 + (i * 7));
+            });
+            
+            // Tête
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(125, 90, 58);
+            doc.text(`TÊTE (Expression ${nombreExpression}) :`, 20, 150);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            ingredientsExpr.tete.forEach((ing, i) => {
+                doc.text(`- ${ing}`, 25, 160 + (i * 7));
+            });
+            
+            // Sauvegarde le PDF
+            doc.save(`parfum_numero_${nom.replace(/\s/g, '_')}.pdf`);
+        }
+    </script>
+</body>
+<script>
+  // Enregistrement du Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+          console.log('ServiceWorker enregistré avec succès');
+        })
+        .catch(err => {
+          console.log('Échec de l\'enregistrement du ServiceWorker: ', err);
+        });
+    });
+  }
+
+  // Détection du mode standalone
+  window.addEventListener('DOMContentLoaded', () => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      console.log('Lancé en mode PWA');
+    }
+  });
+</script>
+</html>
